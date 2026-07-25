@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jejune-md-browser-check"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.entry-points."jejune.plugins"]
+md-browser = "jejune_md_browser_check.plugin:plugin"

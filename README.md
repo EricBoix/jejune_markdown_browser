@@ -18,6 +18,26 @@ For persistent data (optional):
 docker run -d -v /path/to/data:/config -p 8443:8443 jejuneness:code-server-uri-opener
 ```
 
+## Health check
+
+Install the check package once (requires `jejune_cli` to be installed):
+
+```sh
+pip install -e check/
+```
+
+Then probe a running container:
+
+```sh
+python -m jejune_md_browser_check status
+```
+
+The default port is `8443`. Override with `MARKDOWN_PORT`:
+
+```sh
+MARKDOWN_PORT=9443 python -m jejune_md_browser_check status
+```
+
 ## Usage examples
 
 Open `sample.md` with lines 7-10 selected/highlighted:
