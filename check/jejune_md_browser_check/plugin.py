@@ -27,12 +27,24 @@ def md_browser_group():
     """Commands for the jejune markdown-browser UI component."""
 
 
-@md_browser_group.command("status")
-def status():
-    """Check that the markdown-browser container is reachable."""
-    ok, msg = _check_availability()
-    symbol = click.style("ok", fg="green") if ok else click.style("error", fg="red")
-    click.echo(f"md-browser  {symbol}  {msg}")
+@md_browser_group.command("status-availability")
+def status_availability():
+    """Show md-browser availability status (mirrors the doctor Status column)."""
+    ok, _ = _check_availability()
+    if ok:
+        click.echo(f"md-browser: {click.style('ok', fg='green')}")
+    else:
+        click.echo(f"md-browser: {click.style('error', fg='red')}")
+
+
+@md_browser_group.command("hint-availability")
+def hint_availability():
+    """Show how to start the markdown-browser container."""
+    ok, _ = _check_availability()
+    if ok:
+        click.echo(click.style("md-browser is reachable", fg="green"))
+    else:
+        click.echo("run `docker compose --env-file deployment.env up -d`")
 
 
 plugin = JejunePlugin(
