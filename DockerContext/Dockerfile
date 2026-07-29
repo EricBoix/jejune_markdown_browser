@@ -20,4 +20,7 @@ COPY --from=builder /ext/ /app/code-server/lib/vscode/extensions/local.uri-opene
 COPY sample.md /config/
 COPY samples/ /config/samples/
 
+RUN mkdir -p /config/data/User \
+    && printf '{"workbench.startupEditor":"none"}' > /config/data/User/settings.json
+
 WORKDIR /config

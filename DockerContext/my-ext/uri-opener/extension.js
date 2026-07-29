@@ -8,58 +8,6 @@ function activate(context) {
 
     startTriggerServer(context);
 
-    // Webview reads URL hash for #sel= (range selection in local files only)
-    const panel = vscode.window.createWebviewPanel(
-        'uriReader',
-        'URI Reader',
-        { viewColumn: vscode.ViewColumn.Active, preserveFocus: true },
-        { enableScripts: true }
-    );
-
-    panel.webview.html = `<!DOCTYPE html>
-    <html>
-    <body>
-    <script>
-        const vscode = acquireVsCodeApi();
-
-        function checkHash() {
-            let hash = window.location.hash;
-            try { hash = window.top.location.hash || hash; } catch(e) {}
-            if (!hash.startsWith('#sel=')) {
-                vscode.postMessage({ type: 'done' });
-                return;
-            }
-            const content = hash.slice(5);
-            const solo = content.includes('&solo');
-            const sel = decodeURIComponent(content.replace('&solo', ''));
-            vscode.postMessage({ type: 'selection', data: sel, solo });
-        }
-
-        checkHash();
-        window.addEventListener('hashchange', checkHash);
-        setTimeout(() => vscode.postMessage({ type: 'done' }), 500);
-    </script>
-    </body>
-    </html>`;
-
-    panel.webview.onDidReceiveMessage(async (msg) => {
-        if (msg.type === 'selection' && msg.data) {
-            const match = msg.data.match(/^(.+):(\d+):(\d+):(\d+):(\d+)$/);
-            if (match) {
-                const [, file, sl, sc, el, ec] = match;
-                panel.dispose();
-                if (msg.solo) {
-                    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-                }
-                await openFileWithRange(file, parseInt(sl), parseInt(sc), parseInt(el), parseInt(ec));
-                return;
-            }
-        }
-        if (msg.type === 'done') {
-            panel.dispose();
-        }
-    });
-
     const command = vscode.commands.registerCommand('uri-opener.openRange', async (args) => {
         if (!args || !args.file) {
             vscode.window.showErrorMessage('uri-opener.openRange: missing file argument');
