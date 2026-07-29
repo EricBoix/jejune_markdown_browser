@@ -115,9 +115,11 @@ function startTriggerServer(context) {
             res.end(e.message);
         }
     });
-    server.on('error', e =>
-        vscode.window.showErrorMessage(`uri-opener: trigger server error: ${e.message}`)
-    );
+    server.on('error', e => {
+        if (e.code !== 'EADDRINUSE') {
+            vscode.window.showErrorMessage(`uri-opener: trigger server error: ${e.message}`);
+        }
+    });
     server.listen(8085, '0.0.0.0');
     context.subscriptions.push({ dispose: () => server.close() });
 }

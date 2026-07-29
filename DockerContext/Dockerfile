@@ -15,7 +15,7 @@ RUN cp -r /tmp/vsix/extension/* /ext/
 # Stage 2: Final image
 FROM lscr.io/linuxserver/code-server:latest
 
-COPY --from=builder /ext/ /config/extensions/local.uri-opener-0.0.1/
+COPY --from=builder /ext/ /app/code-server/lib/vscode/extensions/local.uri-opener-0.0.1/
 
 COPY sample.md /config/
 COPY samples/ /config/samples/
