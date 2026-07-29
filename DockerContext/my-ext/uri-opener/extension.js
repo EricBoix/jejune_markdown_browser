@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 function activate(context) {
+    vscode.commands.executeCommand('workbench.action.closeSidebar');
     vscode.window.showInformationMessage('URI Range Opener activated!');
 
     // Create hidden webview to read URL hash
@@ -107,12 +108,23 @@ function activate(context) {
     context.subscriptions.push(command, uriHandler);
 }
 
+function resolveInternalUrl(url) {
+    const internalBase = process.env.DOCS_SERVER_INTERNAL_URL;
+    if (!internalBase) return url;
+    try {
+        const parsed = new URL(url);
+        return internalBase.replace(/\/$/, '') + parsed.pathname + parsed.search + parsed.hash;
+    } catch (e) {
+        return url;
+    }
+}
+
 async function fetchAndOpen(url, name) {
     const destDir = '/config/docs-server';
     const destFile = path.join(destDir, `${name}.md`);
     try {
         if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-        const content = await fetchUrl(url);
+        const content = await fetchUrl(resolveInternalUrl(url));
         fs.writeFileSync(destFile, content, 'utf8');
         await openFileWithRange(destFile, 1, 1, 1, 1);
     } catch (err) {
