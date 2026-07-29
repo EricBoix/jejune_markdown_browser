@@ -1,4 +1,6 @@
 const vscode = require('vscode');
+const fs = require('fs');
+const path = require('path');
 
 function activate(context) {
     vscode.window.showInformationMessage('URI Range Opener activated!');
@@ -18,33 +20,36 @@ function activate(context) {
         const vscode = acquireVsCodeApi();
 
         function parseHash(hash) {
-            if (!hash || !hash.startsWith('#sel=')) return null;
-            const content = hash.slice(5);
-            const solo = content.includes('&solo');
-            const sel = decodeURIComponent(content.replace('&solo', ''));
-            return { sel, solo };
+            if (!hash) return null;
+            if (hash.startsWith('#sel=')) {
+                const content = hash.slice(5);
+                const solo = content.includes('&solo');
+                const sel = decodeURIComponent(content.replace('&solo', ''));
+                return { type: 'selection', sel, solo };
+            }
+            if (hash.startsWith('#url=')) {
+                const params = new URLSearchParams(hash.slice(1));
+                const url = params.get('url');
+                const name = params.get('name') || 'document';
+                if (url) return { type: 'fetch-url', url, name };
+            }
+            return null;
         }
 
         function checkHash() {
-            const parsed = parseHash(window.location.hash);
-            if (parsed) {
-                vscode.postMessage({ type: 'selection', data: parsed.sel, solo: parsed.solo });
-            }
+            let hash = window.location.hash;
+            try { hash = window.top.location.hash || hash; } catch(e) {}
+            const parsed = parseHash(hash);
+            if (!parsed) return;
+            vscode.postMessage(parsed.type === 'selection'
+                ? { type: 'selection', data: parsed.sel, solo: parsed.solo }
+                : { type: 'fetch-url', url: parsed.url, name: parsed.name });
         }
 
-        // Check immediately and on hash change
         checkHash();
         window.addEventListener('hashchange', checkHash);
 
-        // Also check parent/top window
-        try {
-            const parsed = parseHash(window.top.location.hash);
-            if (parsed) {
-                vscode.postMessage({ type: 'selection', data: parsed.sel, solo: parsed.solo });
-            }
-        } catch(e) {}
-
-        // Close after checking
+        // Close after checking if nothing matched
         setTimeout(() => vscode.postMessage({ type: 'done' }), 500);
     </script>
     </body>
@@ -52,7 +57,6 @@ function activate(context) {
 
     panel.webview.onDidReceiveMessage(async (msg) => {
         if (msg.type === 'selection' && msg.data) {
-            // Parse: /path/file.md:sl:sc:el:ec
             const match = msg.data.match(/^(.+):(\d+):(\d+):(\d+):(\d+)$/);
             if (match) {
                 const [, file, sl, sc, el, ec] = match;
@@ -63,6 +67,11 @@ function activate(context) {
                 await openFileWithRange(file, parseInt(sl), parseInt(sc), parseInt(el), parseInt(ec));
                 return;
             }
+        }
+        if (msg.type === 'fetch-url' && msg.url) {
+            panel.dispose();
+            await fetchAndOpen(msg.url, msg.name);
+            return;
         }
         if (msg.type === 'done') {
             panel.dispose();
@@ -96,6 +105,35 @@ function activate(context) {
     });
 
     context.subscriptions.push(command, uriHandler);
+}
+
+async function fetchAndOpen(url, name) {
+    const destDir = '/config/docs-server';
+    const destFile = path.join(destDir, `${name}.md`);
+    try {
+        if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+        const content = await fetchUrl(url);
+        fs.writeFileSync(destFile, content, 'utf8');
+        await openFileWithRange(destFile, 1, 1, 1, 1);
+    } catch (err) {
+        vscode.window.showErrorMessage(`uri-opener: failed to load ${url}: ${err.message}`);
+    }
+}
+
+function fetchUrl(url) {
+    return new Promise((resolve, reject) => {
+        const client = url.startsWith('https') ? require('https') : require('http');
+        client.get(url, (res) => {
+            if (res.statusCode !== 200) {
+                reject(new Error(`HTTP ${res.statusCode}`));
+                return;
+            }
+            const chunks = [];
+            res.on('data', chunk => chunks.push(chunk));
+            res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+            res.on('error', reject);
+        }).on('error', reject);
+    });
 }
 
 async function openFileWithRange(file, sl = 1, sc = 1, el = sl, ec = sc) {
