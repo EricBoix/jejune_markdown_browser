@@ -51,9 +51,10 @@ function startTriggerServer(context) {
             const url = u.searchParams.get('url');
             const name = u.searchParams.get('name');
             if (req.method === 'GET' && u.pathname === '/open' && url && name) {
+                const solo = u.searchParams.get('solo') === '1';
                 res.writeHead(200, { ...cors, 'Content-Type': 'text/plain' });
                 res.end('ok');
-                fetchAndOpen(url, name);
+                fetchAndOpen(url, name, solo);
             } else {
                 res.writeHead(404, cors);
                 res.end();
@@ -83,13 +84,16 @@ function resolveInternalUrl(url) {
     }
 }
 
-async function fetchAndOpen(url, name) {
+async function fetchAndOpen(url, name, solo = false) {
     const destDir = '/config/docs-server';
     const destFile = path.join(destDir, `${name}.md`);
     try {
         if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
         const content = await fetchUrl(resolveInternalUrl(url));
         fs.writeFileSync(destFile, content, 'utf8');
+        if (solo) {
+            await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        }
         await openFileWithRange(destFile, 1, 1, 1, 1);
     } catch (err) {
         vscode.window.showErrorMessage(`uri-opener: failed to load ${url}: ${err.message}`);
