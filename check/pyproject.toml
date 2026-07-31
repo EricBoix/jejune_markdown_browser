@@ -6,12 +6,7 @@ build-backend = "hatchling.build"
 name = "jejune-md-browser-check"
 version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = [
-    "jejune-cli @ git+https://github.com/EricBoix/jejune_cli",
-]
-
-[tool.hatch.metadata]
-allow-direct-references = true
+dependencies = []
 
 [project.entry-points."jejune.plugins"]
 md-browser = "jejune_md_browser_check.plugin:plugin"
