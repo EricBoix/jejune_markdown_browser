@@ -1,7 +1,7 @@
 {
-  "name": "uri-opener",
-  "displayName": "URI Range Opener",
-  "description": "Open files with range selection via URI payload",
+  "name": "uri-highlight",
+  "displayName": "URI Highlight",
+  "description": "Fetch remote markdown and open local files with range highlight via HTTP",
   "version": "0.0.1",
   "publisher": "local",
   "engines": {
@@ -18,12 +18,5 @@
     "onStartupFinished"
   ],
   "main": "./extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "uri-opener.openRange",
-        "title": "Open File with Range Selection"
-      }
-    ]
-  }
+  "contributes": {}
 }

@@ -1,0 +1,37 @@
+@startuml
+!theme plain
+skinparam defaultFontSize 11
+
+participant ">< docs_server UI" as EC
+participant "VSCode extension\n(uri-highlight)" as EXT
+
+box "code-server"
+participant "File System\n/config/docs-server/" as FS
+participant "VS Code API" as VSC
+participant "UI" as UI
+end box
+
+participant ">< docs_server" as REMOTE
+
+== need_1: fetch remote markdown and display ==
+
+EC -> EXT : GET /fetch?url=...&name=...
+EXT -> EXT : resolve internal URL\n(DOCS_SERVER_INTERNAL_URL)
+EXT -> REMOTE : GET markdown content
+REMOTE --> EXT : 200 markdown text
+EXT -> FS : writeFile({name}.md)
+EXT --> EC : 200 {"file": "/config/docs-server/{name}.md",\n      "size": N}
+
+== need_2: open local file with character range highlighted ==
+
+EC -> EXT : GET /highlight?file=...&sl=...&sc=...&el=...&ec=...
+opt solo=1
+    EXT -> VSC : closeAllEditors
+end
+EXT -> VSC : openTextDocument(file)
+VSC --> EXT : document
+EXT -> VSC : showTextDocument(doc,\n  selection: sl,sc → el,ec)
+VSC -> UI : tab opened with range highlighted
+EXT --> EC : 200 ok
+
+@enduml

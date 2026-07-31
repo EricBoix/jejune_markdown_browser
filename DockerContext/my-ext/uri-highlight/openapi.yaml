@@ -1,0 +1,97 @@
+openapi: 3.0.3
+info:
+  title: uri-highlight
+  description: Fetch remote markdown and open local files with range highlight via HTTP
+  version: 0.0.1
+servers:
+  - url: http://localhost:8085
+paths:
+  /fetch:
+    get:
+      summary: Fetch a remote markdown file and save it locally
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Remote URL of the markdown file to fetch
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "Local name; file is saved as /config/docs-server/{name}.md"
+      responses:
+        '200':
+          description: File fetched and saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  file:
+                    type: string
+                    description: Absolute path of the saved file inside the container
+                  size:
+                    type: integer
+                    description: Size of the saved file in bytes
+        '400':
+          description: Missing url or name parameter
+        '500':
+          description: Fetch or write error
+  /highlight:
+    get:
+      summary: Open a local file with a character range highlighted in code-server
+      parameters:
+        - name: file
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Absolute path to the file inside the container
+        - name: sl
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Start line (1-indexed)
+        - name: sc
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Start column (1-indexed)
+        - name: el
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: End line (1-indexed, defaults to sl)
+        - name: ec
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: End column (1-indexed, defaults to sc)
+        - name: solo
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ['1']
+          description: Set to 1 to close all other editor tabs before opening
+      responses:
+        '200':
+          description: File opened and range highlighted
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+        '400':
+          description: Missing file parameter
+        '500':
+          description: VS Code API error

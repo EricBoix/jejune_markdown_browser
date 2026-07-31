@@ -1,21 +1,36 @@
-# URI Range Opener for code-server
+# Highlight a document (with code-server)!-- omit in toc -->
 
-Display markdown files in an editor like fashion (with range selection on opening). Based on [docker based containerization](https://hub.docker.com/r/linuxserver/code-server) of the [code-server (aka coder)](https://coder.com/) (VS Code running on a remote server, accessible through the browser).
+## Table of content<!-- omit in toc -->
+
+- [Highlight a document (with code-server)!-- omit in toc --\>](#highlight-a-document-with-code-server---omit-in-toc---)
+  - [Introduction](#introduction)
+  - [Quick Start](#quick-start)
+  - [Health check](#health-check)
+  - [Usage examples](#usage-examples)
+  - [Testing things a bit more deeply](#testing-things-a-bit-more-deeply)
+  - [How It Works](#how-it-works)
+  - [Rebuilding the Extension](#rebuilding-the-extension)
+
+## Introduction
+
+This component displays markdown files with range selection via an HTTP API. Based on [docker based containerization](https://hub.docker.com/r/linuxserver/code-server) of the [code-server (aka coder)](https://coder.com/) (VS Code running on a remote server, accessible through the browser).
 
 ## Quick Start
 
 ```bash
 # Build image (one-time)
-docker build -t jejuneness:code-server-uri-opener DockerContext/
+docker build -t jejune:markdown-browser DockerContext/
+```
 
+```bash
 # Run container
-docker run -d -p 8443:8443 jejuneness:code-server-uri-opener
+docker run --rm -d -p 8443:8443 -p 8085:8085 --name jejune-markdown-browser -t jejune:markdown-browser
 ```
 
 For persistent data (optional):
 
 ```bash
-docker run -d -v /path/to/data:/config -p 8443:8443 jejuneness:code-server-uri-opener
+docker run -d -v /path/to/data:/config -p 8443:8443 -p 8085:8085 jejuneness:code-server-uri-opener
 ```
 
 ## Health check
@@ -23,13 +38,15 @@ docker run -d -v /path/to/data:/config -p 8443:8443 jejuneness:code-server-uri-o
 Install the check package once (requires `jejune_cli` to be installed):
 
 ```sh
-pip install -e check/
+python3.10 -m venv venv
+source venv/bin/activate
+uv pip install ./check
 ```
 
 Then probe a running container:
 
 ```sh
-python -m jejune_md_browser_check status
+python -m jejune_md_browser_check status-availability
 ```
 
 The default port is `8443`. Override with `MARKDOWN_PORT`:
@@ -40,38 +57,45 @@ MARKDOWN_PORT=9443 python -m jejune_md_browser_check status
 
 ## Usage examples
 
-Open `sample.md` with lines 7-10 selected/highlighted:
+The full API is documented interactively via Swagger UI at `http://127.0.0.1:8085/docs` once the container is running.
 
-```text
-http://127.0.0.1:8443/?folder=/config#sel=/config/sample.md:7:1:10:50
-```
+### GET /fetch
 
-Open `samples/another-sample.md` with lines 14-16 selected:
-
-```text
-http://127.0.0.1:8443/?folder=/config#sel=/config/samples/another-sample.md:14:1:16:60
-```
-
-Open `sample.md` and close all other editor tabs:
-
-```text
-http://127.0.0.1:8443/?folder=/config#sel=/config/sample.md:7:1:10:50&solo
-```
-
-## URI Format
-
-```text
-http://127.0.0.1:8443/?folder=/config#sel=<file>:<sl>:<sc>:<el>:<ec>[&solo]
-```
+Fetches a remote markdown URL, saves it to `/config/docs-server/`, and returns the local path and size.
 
 | Parameter | Description                              |
 | --------- | ---------------------------------------- |
-| `file`    | Absolute path to file (inside container) |
-| `sl`      | Start line (1-indexed)                   |
-| `sc`      | Start column (1-indexed)                 |
-| `el`      | End line (1-indexed)                     |
-| `ec`      | End column (1-indexed)                   |
-| `&solo`   | Optional: close all other editor tabs    |
+| `url`     | Remote URL of the markdown to fetch      |
+| `name`    | Saved as `/config/docs-server/{name}.md` |
+
+Response (JSON): `{"file": "<absolute-path>", "size": <bytes>}`
+
+Try it with:
+
+```bash
+curl "http://127.0.0.1:8085/fetch?url=<remote-url>&name=my-doc"
+```
+
+### GET /highlight
+
+Opens a local file in code-server with the specified character range highlighted.
+
+| Parameter | Description                                          |
+| --------- | ---------------------------------------------------- |
+| `file`    | Absolute path to file (inside container)             |
+| `sl`      | Start line (1-indexed)                               |
+| `sc`      | Start column (1-indexed)                             |
+| `el`      | End line (1-indexed)                                 |
+| `ec`      | End column (1-indexed)                               |
+| `solo`    | Optional: set to `1` to close all other editor tabs  |
+
+Response: `ok`
+
+Try to close all other editor tabs (`solo` option) and display a file :
+
+```bash
+curl "http://127.0.0.1:8085/highlight?file=/config/sample.md&sl=7&sc=1&el=10&ec=50&solo=1"
+```
 
 ## Testing things a bit more deeply
 
@@ -83,13 +107,18 @@ git clean -Xdf
 
 ## How It Works
 
-The extension (refer to [`DockerContext/my-ext/uri-opener/`](./) subdirectory) creates a temporary webview on activation that reads the URL hash fragment (`#sel=...`), parses the selection parameters, and opens the file with the specified range highlighted.
+The `uri-highlight` VS Code extension activates on startup and starts an HTTP trigger server on port 8085. It exposes two endpoints:
+
+- `GET /fetch`: fetches a remote markdown URL, saves it to `/config/docs-server/`, and returns the local path and file size. The response is sent only after the file is fully written.
+- `GET /highlight`: opens a local file in code-server with the specified character range highlighted. The response is sent only after the VS Code API calls complete.
 
 ## Rebuilding the Extension
 
-Only needed when modifying `extension.js` or `package.json`:
+Only needed when modifying files in `my-ext/uri-highlight`:
 
 ```bash
-cd DockerContext/my-ext/uri-opener
-npx @vscode/vsce package --allow-missing-repository
+cd DockerContext/my-ext/uri-highlight
+yes | npx @vscode/vsce package --allow-missing-repository
 ```
+
+and then proceed with [rebuilding the container image](#quick-start).

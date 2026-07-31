@@ -5,38 +5,11 @@ const http = require('http');
 
 function activate(context) {
     vscode.commands.executeCommand('workbench.action.closeSidebar');
-
     startTriggerServer(context);
-
-    const command = vscode.commands.registerCommand('uri-opener.openRange', async (args) => {
-        if (!args || !args.file) {
-            vscode.window.showErrorMessage('uri-opener.openRange: missing file argument');
-            return;
-        }
-        await openFileWithRange(args.file, args.sl, args.sc, args.el, args.ec);
-    });
-
-    const uriHandler = vscode.window.registerUriHandler({
-        handleUri(uri) {
-            const params = new URLSearchParams(uri.query);
-            const file = params.get('file');
-            if (file) {
-                openFileWithRange(
-                    file,
-                    parseInt(params.get('sl')) || 1,
-                    parseInt(params.get('sc')) || 1,
-                    parseInt(params.get('el')) || 1,
-                    parseInt(params.get('ec')) || 1
-                );
-            }
-        }
-    });
-
-    context.subscriptions.push(command, uriHandler);
 }
 
 function startTriggerServer(context) {
-    const server = http.createServer((req, res) => {
+    const server = http.createServer(async (req, res) => {
         const cors = {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -48,13 +21,53 @@ function startTriggerServer(context) {
         }
         try {
             const u = new URL(req.url, 'http://localhost');
-            const url = u.searchParams.get('url');
-            const name = u.searchParams.get('name');
-            if (req.method === 'GET' && u.pathname === '/open' && url && name) {
+            if (req.method !== 'GET') {
+                res.writeHead(404, cors);
+                res.end();
+                return;
+            }
+            if (u.pathname === '/fetch') {
+                const url = u.searchParams.get('url');
+                const name = u.searchParams.get('name');
+                if (!url || !name) {
+                    res.writeHead(400, cors);
+                    res.end('missing url or name');
+                    return;
+                }
+                const destDir = '/config/docs-server';
+                const destFile = path.join(destDir, `${name}.md`);
+                if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+                const content = await fetchUrl(resolveInternalUrl(url));
+                fs.writeFileSync(destFile, content, 'utf8');
+                const size = Buffer.byteLength(content, 'utf8');
+                res.writeHead(200, { ...cors, 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ file: destFile, size }));
+            } else if (u.pathname === '/highlight') {
+                const file = u.searchParams.get('file');
+                if (!file) {
+                    res.writeHead(400, cors);
+                    res.end('missing file');
+                    return;
+                }
+                const sl = parseInt(u.searchParams.get('sl')) || 1;
+                const sc = parseInt(u.searchParams.get('sc')) || 1;
+                const el = parseInt(u.searchParams.get('el')) || sl;
+                const ec = parseInt(u.searchParams.get('ec')) || sc;
                 const solo = u.searchParams.get('solo') === '1';
+                if (solo) {
+                    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+                }
+                await openFileWithRange(file, sl, sc, el, ec);
                 res.writeHead(200, { ...cors, 'Content-Type': 'text/plain' });
                 res.end('ok');
-                fetchAndOpen(url, name, solo);
+            } else if (u.pathname === '/openapi.yaml') {
+                const spec = fs.readFileSync(path.join(__dirname, 'openapi.yaml'), 'utf8');
+                res.writeHead(200, { ...cors, 'Content-Type': 'text/yaml' });
+                res.end(spec);
+            } else if (u.pathname === '/docs') {
+                const html = fs.readFileSync(path.join(__dirname, 'docs.html'), 'utf8');
+                res.writeHead(200, { ...cors, 'Content-Type': 'text/html' });
+                res.end(html);
             } else {
                 res.writeHead(404, cors);
                 res.end();
@@ -66,7 +79,7 @@ function startTriggerServer(context) {
     });
     server.on('error', e => {
         if (e.code !== 'EADDRINUSE') {
-            vscode.window.showErrorMessage(`uri-opener: trigger server error: ${e.message}`);
+            vscode.window.showErrorMessage(`uri-highlight: trigger server error: ${e.message}`);
         }
     });
     server.listen(8085, '0.0.0.0');
@@ -81,22 +94,6 @@ function resolveInternalUrl(url) {
         return internalBase.replace(/\/$/, '') + parsed.pathname + parsed.search + parsed.hash;
     } catch (e) {
         return url;
-    }
-}
-
-async function fetchAndOpen(url, name, solo = false) {
-    const destDir = '/config/docs-server';
-    const destFile = path.join(destDir, `${name}.md`);
-    try {
-        if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-        const content = await fetchUrl(resolveInternalUrl(url));
-        fs.writeFileSync(destFile, content, 'utf8');
-        if (solo) {
-            await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-        }
-        await openFileWithRange(destFile, 1, 1, 1, 1);
-    } catch (err) {
-        vscode.window.showErrorMessage(`uri-opener: failed to load ${url}: ${err.message}`);
     }
 }
 
@@ -126,7 +123,7 @@ async function openFileWithRange(file, sl = 1, sc = 1, el = sl, ec = sc) {
         const doc = await vscode.workspace.openTextDocument(uri);
         await vscode.window.showTextDocument(doc, { selection, preview: false });
     } catch (err) {
-        vscode.window.showErrorMessage(`uri-opener: ${err.message}`);
+        vscode.window.showErrorMessage(`uri-highlight: ${err.message}`);
     }
 }
 
