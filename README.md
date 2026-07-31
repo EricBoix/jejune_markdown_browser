@@ -5,6 +5,7 @@
 - [Highlight a document (with code-server)!-- omit in toc --\>](#highlight-a-document-with-code-server---omit-in-toc---)
   - [Introduction](#introduction)
   - [Quick Start](#quick-start)
+  - [Warning](#warning)
   - [Health check](#health-check)
   - [Usage examples](#usage-examples)
   - [Testing things a bit more deeply](#testing-things-a-bit-more-deeply)
@@ -32,6 +33,10 @@ For persistent data (optional):
 ```bash
 docker run -d -v /path/to/data:/config -p 8443:8443 -p 8085:8085 jejuneness:code-server-uri-opener
 ```
+
+## Warning
+
+Port 8085 is controlled by the VS Code extension, which only activates when a browser session first opens on 8443. In other always **always start with a visit to 8443 prior to using the HTTP API on 8085**.
 
 ## Health check
 
