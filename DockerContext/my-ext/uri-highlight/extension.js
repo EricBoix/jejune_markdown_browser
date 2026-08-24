@@ -40,8 +40,11 @@ function startTriggerServer(context) {
                 const content = await fetchUrl(resolveInternalUrl(url));
                 fs.writeFileSync(destFile, content, 'utf8');
                 const size = Buffer.byteLength(content, 'utf8');
+                const text = u.searchParams.get('text');
+                const range = text ? findRange(content, text) : null;
+                const { sl = 1, sc = 1, el = 1, ec = 1 } = range ?? {};
                 res.writeHead(200, { ...cors, 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ file: destFile, size }));
+                res.end(JSON.stringify({ file: destFile, size, sl, sc, el, ec }));
             } else if (u.pathname === '/highlight') {
                 const file = u.searchParams.get('file');
                 if (!file) {
@@ -84,6 +87,16 @@ function startTriggerServer(context) {
     });
     server.listen(8085, '0.0.0.0');
     context.subscriptions.push({ dispose: () => server.close() });
+}
+
+function findRange(content, text) {
+    const lines = content.split('\n');
+    for (let l = 0; l < lines.length; l++) {
+        const col = lines[l].indexOf(text);
+        if (col !== -1)
+            return { sl: l + 1, sc: col + 1, el: l + 1, ec: col + text.length + 1 };
+    }
+    return null;
 }
 
 function resolveInternalUrl(url) {
