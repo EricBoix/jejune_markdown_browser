@@ -7,9 +7,9 @@ import click
 from jejune_cli.plugin import JejunePlugin
 
 _DEFAULT_PORT = "8443"
-_DEFAULT_API_PORT = "8085"
+_DEFAULT_API_PORT = "8444"
 _CONFIG_VAR = "MARKDOWN_PORT"
-_API_CONFIG_VAR = "MARKDOWN_API_PORT"
+_API_CONFIG_VAR = "MARKDOWN_TRIGGER_PORT"
 
 
 def _probe(port: str) -> tuple[bool, str]:
@@ -74,9 +74,9 @@ plugin = JejunePlugin(
     config_vars=[_CONFIG_VAR, _API_CONFIG_VAR],
     config_hint=(
         f"Set {_CONFIG_VAR} to the code-server port (default {_DEFAULT_PORT})"
-        f" and {_API_CONFIG_VAR} to the extension API port (default {_DEFAULT_API_PORT})."
+        f" and {_API_CONFIG_VAR} to the trigger/API port (default {_DEFAULT_API_PORT})."
     ),
-    avail_hint="Run `docker compose up -d` in your SomeMac deployment directory.",
+    avail_hint="",
     check_availability=_check_availability,
     stage="extension",
 )
