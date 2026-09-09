@@ -71,7 +71,6 @@ def hint_availability():
 plugin = plugin_description(
     name="md-browser",
     group=md_browser_group,
-    repo_name="jejune_markdown_browser",
     config_vars=[_CONFIG_VAR, _API_CONFIG_VAR],
     config_hint=(
         f"Set {_CONFIG_VAR} to the code-server port (default {_DEFAULT_PORT})"
