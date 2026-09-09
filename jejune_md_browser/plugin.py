@@ -5,6 +5,7 @@ import urllib.request
 import click
 
 from jejune_cli.plugin_description import plugin_description
+from .component_cont_md_browser import comp_md_browser
 
 _DEFAULT_PORT = "8443"
 _DEFAULT_API_PORT = "8444"
@@ -79,4 +80,5 @@ plugin = plugin_description(
     avail_hint="",
     check_availability=_check_availability,
     stage="extension",
+    component=comp_md_browser(),
 )
