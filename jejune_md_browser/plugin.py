@@ -4,7 +4,7 @@ import urllib.request
 
 import click
 
-from jejune_cli.plugin import JejunePlugin
+from jejune_cli.plugin_description import plugin_description
 
 _DEFAULT_PORT = "8443"
 _DEFAULT_API_PORT = "8444"
@@ -68,9 +68,10 @@ def hint_availability():
     click.echo(click.style("md-browser is reachable", fg="green"))
 
 
-plugin = JejunePlugin(
+plugin = plugin_description(
     name="md-browser",
     group=md_browser_group,
+    repo_name="jejune_markdown_browser",
     config_vars=[_CONFIG_VAR, _API_CONFIG_VAR],
     config_hint=(
         f"Set {_CONFIG_VAR} to the code-server port (default {_DEFAULT_PORT})"
