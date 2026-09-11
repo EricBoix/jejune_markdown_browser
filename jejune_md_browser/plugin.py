@@ -81,4 +81,5 @@ plugin = plugin_description(
     check_availability=_check_availability,
     stage="extension",
     component=comp_md_browser(),
+    repo_name="jejune_markdown_browser",
 )
