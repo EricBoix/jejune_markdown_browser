@@ -12,6 +12,8 @@ _DEFAULT_API_PORT = "8444"
 _CONFIG_VAR = "MARKDOWN_PORT"
 _API_CONFIG_VAR = "MARKDOWN_TRIGGER_PORT"
 
+_component = comp_md_browser()
+
 
 def _probe(port: str) -> tuple[bool, str]:
     url = f"http://localhost:{port}/"
@@ -25,6 +27,8 @@ def _probe(port: str) -> tuple[bool, str]:
 
 
 def _check_availability() -> tuple[bool, str]:
+    if not _component.is_running()[0]:
+        return False, "container not running"
     port = os.environ.get(_CONFIG_VAR, _DEFAULT_PORT)
     return _probe(port)
 
@@ -80,6 +84,6 @@ plugin = plugin_description(
     avail_hint="",
     check_availability=_check_availability,
     stage="extension",
-    component=comp_md_browser(),
+    component=_component,
     repo_name="jejune_markdown_browser",
 )
