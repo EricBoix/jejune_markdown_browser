@@ -83,7 +83,7 @@ plugin = plugin_description(
     ),
     avail_hint="",
     check_availability=_check_availability,
-    stage="extension",
+    target_role="deployer",
     component=_component,
     repo_name="jejune_markdown_browser",
 )
