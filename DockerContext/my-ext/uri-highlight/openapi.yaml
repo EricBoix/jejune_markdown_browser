@@ -83,6 +83,14 @@ paths:
             type: string
             enum: ['1']
           description: Set to 1 to close all other editor tabs before opening
+        - name: term
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >
+            Node name or id to highlight (case-insensitive) throughout the document
+            with a distinct colour from the chunk highlight.
       responses:
         '200':
           description: File opened and range highlighted
