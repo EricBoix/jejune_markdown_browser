@@ -5,14 +5,14 @@ import urllib.request
 import click
 
 from jejune_cli.plugin_description import PluginDescription
-from .component_cont_md_browser import comp_md_browser
+from .component_cont_md_browser import CompMdBrowser
 
 _DEFAULT_PORT = "8443"
 _DEFAULT_API_PORT = "8444"
 _CONFIG_VAR = "MARKDOWN_PORT"
 _API_CONFIG_VAR = "MARKDOWN_TRIGGER_PORT"
 
-_component = comp_md_browser()
+_component = CompMdBrowser()
 
 
 def _probe(port: str) -> tuple[bool, str]:
