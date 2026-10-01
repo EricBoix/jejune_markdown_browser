@@ -4,7 +4,7 @@ import urllib.request
 
 import click
 
-from jejune_cli.plugin_description import plugin_description
+from jejune_cli.plugin_description import PluginDescription
 from .component_cont_md_browser import comp_md_browser
 
 _DEFAULT_PORT = "8443"
@@ -45,7 +45,9 @@ def status_availability():
     api_port = os.environ.get(_API_CONFIG_VAR, _DEFAULT_API_PORT)
     cs_ok, _ = _probe(cs_port)
     if not cs_ok:
-        click.echo(f"md-browser: {click.style('error', fg='red')} (container not running on :{cs_port})")
+        click.echo(
+            f"md-browser: {click.style('error', fg='red')} (container not running on :{cs_port})"
+        )
         return
     api_ok, _ = _probe(api_port)
     if not api_ok:
@@ -68,12 +70,14 @@ def hint_availability():
         return
     api_ok, _ = _probe(api_port)
     if not api_ok:
-        click.echo(f"open http://localhost:{cs_port} in a browser to activate the extension API")
+        click.echo(
+            f"open http://localhost:{cs_port} in a browser to activate the extension API"
+        )
         return
     click.echo(click.style("md-browser is reachable", fg="green"))
 
 
-plugin = plugin_description(
+plugin = PluginDescription(
     name="md-browser",
     group=md_browser_group,
     config_vars=[_CONFIG_VAR, _API_CONFIG_VAR],
