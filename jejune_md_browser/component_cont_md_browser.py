@@ -1,6 +1,5 @@
 """md-browser containerized component."""
 from jejune_cli.component_containerized import cont_comp
-from jejune_cli.component_registry import ComponentRegistry
 
 
 class comp_md_browser(cont_comp):
@@ -9,10 +8,11 @@ class comp_md_browser(cont_comp):
             name="md-browser",
             image_name="jejune:markdown-browser",
             service_name="markdown-browser",
-            dependencies=[ComponentRegistry().get("ecosystem")],
             hint="run `jejune build`",
         )
         self.repos = [("DockerContext", "MARKDOWN_BROWSER_CONTEXT")]
+        if self._context.ecosystem is not None:
+            self.conditional_dependencies = [(lambda: not self.is_available(), self._context.ecosystem)]
 
     def is_available(self) -> bool:
         return self.is_built()
