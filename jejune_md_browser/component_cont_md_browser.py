@@ -1,8 +1,8 @@
 """md-browser containerized component."""
-from jejune_cli.component_containerized import cont_comp
+from jejune_cli.component_containerized import ContComp
 
 
-class comp_md_browser(cont_comp):
+class comp_md_browser(ContComp):
     def __init__(self) -> None:
         super().__init__(
             name="md-browser",
