@@ -4,6 +4,7 @@ import urllib.request
 
 import click
 
+from jejune_cli.app_context import AppContext
 from jejune_cli.plugin_description import PluginDescription
 from .component_cont_md_browser import CompMdBrowser
 
@@ -11,8 +12,6 @@ _DEFAULT_PORT = "8443"
 _DEFAULT_API_PORT = "8444"
 _CONFIG_VAR = "MARKDOWN_PORT"
 _API_CONFIG_VAR = "MARKDOWN_TRIGGER_PORT"
-
-_component = CompMdBrowser()
 
 
 def _probe(port: str) -> tuple[bool, str]:
@@ -26,8 +25,8 @@ def _probe(port: str) -> tuple[bool, str]:
         return False, str(exc)
 
 
-def _check_availability() -> tuple[bool, str]:
-    if not _component.is_running()[0]:
+def _check_availability(component: CompMdBrowser) -> tuple[bool, str]:
+    if not component.is_running()[0]:
         return False, "container not running"
     port = os.environ.get(_CONFIG_VAR, _DEFAULT_PORT)
     return _probe(port)
@@ -88,6 +87,6 @@ plugin = PluginDescription(
     avail_hint="",
     check_availability=_check_availability,
     target_role="deployer",
-    component=_component,
+    component_factory=CompMdBrowser,
     repo_name="jejune_markdown_browser",
 )
