@@ -31,7 +31,7 @@ docker run --rm -d -p 8443:8443 -p 8085:8085 --name jejune-markdown-browser -t j
 For persistent data (optional):
 
 ```bash
-docker run -d -v /path/to/data:/config -p 8443:8443 -p 8085:8085 jejuneness:code-server-uri-opener
+docker run -d -v /path/to/data:/config -p 8443:8443 -p 8085:8085 jejune:code-server-uri-opener
 ```
 
 ## Warning
